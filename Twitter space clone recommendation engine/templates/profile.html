@@ -1,0 +1,90 @@
+{% extends "layout.html" %}
+
+{% block title %}Profile - {{ user.username }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h2>{{ user.username }}</h2>
+        <p>Email: {{ user.email }}</p>
+        <p>Joined on: {{ user.created_at }}</p>
+        <hr>
+        <h3>Following:</h3>
+        <ul>
+            {% for follow in following %}
+                <li>{{ follow }}</li>
+            {% endfor %}
+        </ul>
+        <h3>Followers:</h3>
+        <ul>
+            {% for follow in followers %}
+                <li>{{ follow }}</li>
+            {% endfor %}
+        </ul>
+        {% if username and username != user.username %}
+            <button class="btn btn-link follow-button" style="color: black; background-color: transparent;" onclick="toggleFollow(this)">
+                <span class="follow-text">{{ 'Following' if is_following else 'Follow' }}</span>
+            </button>
+        {% endif %}
+        <hr>
+        <h3>Posts:</h3>
+        <div>
+            {% for post in posts %}
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <p class="card-text">{{ post.text }}</p>
+                        <div class="d-flex align-items-center">
+                            <small class="text-muted">{{ post.date }}</small>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        <hr>
+        <h3>Reposts:</h3>
+        <div>
+            {% for repost in reposts %}
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <p class="card-text">Reposted: {{ repost.text }}</p>
+                        <div class="d-flex align-items-center">
+                            <small class="text-muted">Original Post by: {{ repost.original_username }}</small>&nbsp;&nbsp;
+                            <small class="text-muted">Original Date: {{ repost.original_date }}</small>
+                            <small class="text-muted ml-auto">Repost Date: {{ repost.repost_date }}</small>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleFollow(button) {
+        var username = "{{ user.username }}";
+        var isFollowing = button.classList.contains("following");
+
+        fetch("/toggle_follow", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                username: username,
+                is_following: !isFollowing
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                button.classList.toggle("following");
+                var followText = button.querySelector(".follow-text");
+                followText.textContent = button.classList.contains("following") ? "Following" : "Follow";
+            } else {
+                alert(data.error);
+            }
+        })
+        .catch(error => console.error("Error:", error));
+    }
+</script>
+{% endblock %}

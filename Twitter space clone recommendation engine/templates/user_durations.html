@@ -1,0 +1,29 @@
+{% extends "layout.html" %}
+
+{% block title %}User Durations{% endblock %}
+
+{% block content %}
+<h2>User Durations</h2>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Space Name</th>
+            <th>Role</th>
+            <th>Joined At</th>
+            <th>Left At</th>
+            <th>Duration (seconds)</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for duration in durations %}
+            <tr>
+                <td>{{ duration.space_name }}</td>
+                <td>{{ duration.role }}</td>
+                <td>{{ duration.joined_at }}</td>
+                <td>{{ duration.left_at }}</td>
+                <td>{{ duration.duration }}</td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

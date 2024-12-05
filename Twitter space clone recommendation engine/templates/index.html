@@ -1,0 +1,188 @@
+{% extends "layout.html" %}
+
+{% block title %}Home - My Blog{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        {% if username %}
+            <!-- New posts -->
+            <form action="{{ url_for('add_post') }}" method="post" id="postForm">
+                <div class="form-group">
+                    <label for="postText">New Post:</label>
+                    <textarea class="form-control" id="postText" name="text" rows="3" required placeholder="What is happening!?"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Post</button>
+            </form>
+            <hr>
+        {% endif %}
+
+        <!-- 显示所有帖子 -->
+        <div>
+            {% for post in posts %}
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title d-flex justify-content-between">
+                            <span><a href="{{ url_for('profile', username=post.username) }}">{{ post.username }}</a></span>
+                            {% if username and username != post.username %}
+                                <button class="btn btn-link follow-button" style="color: black; background-color: transparent;" data-username="{{ post.username }}" onclick="toggleFollow(this)">
+                                    <span class="follow-text">Follow</span>
+                                </button>
+                            {% endif %}
+                        </h5>
+                        {% if post.original_username %}
+                            <p class="card-text">Reposted from {{ post.original_username }}</p>
+                        {% endif %}
+                        <p class="card-text">{{ post.text }}</p>
+                        {% if post.topics %}
+                            <p class="card-text">
+                                {% for topic in post.topics %}
+                                    <span class="badge badge-primary">#{{ topic }}</span>
+                                {% endfor %}
+                            </p>
+                        {% endif %}
+                        <div class="d-flex align-items-center">
+                            <small class="text-muted">{{ post.date }}</small>
+                            <button class="btn btn-link ml-auto" style="color: black; background-color: transparent; margin-left: 800px;" onclick="toggleCommentForm('{{ post.post_id }}')">
+                                <span class="glyphicon glyphicon-envelope" aria-hidden="true">Comment</span>
+                            </button>
+                            <button class="btn btn-link like-button" style="color: black; background-color: transparent; margin-left: 0;" data-post-id="{{ post.post_id }}" onclick="toggleLike(this)">
+                                <span class="glyphicon glyphicon-heart" aria-hidden="true"></span> Like
+                            </button>
+                            <button class="btn btn-link repost-button" style="color: black; background-color: transparent; margin-left: 0;" data-post-id="{{ post.post_id }}" onclick="repostPost(this)">
+                                <span class="glyphicon glyphicon-share" aria-hidden="true"></span> Repost
+                            </button>
+                            {% if post.username == username %}
+                                <form action="{{ url_for('delete_post') }}" method="post" style="display:inline;">
+                                    <input type="hidden" name="post_id" value="{{ post.post_id }}">
+                                    <button type="submit" class="btn btn-danger btn-sm ml-2">Delete</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                        <!-- 评论部分 -->
+                        <div id="commentForm-{{ post.post_id }}" class="comment-form" style="display: none;">
+                            <form action="{{ url_for('add_comment') }}" method="post">
+                                <input type="hidden" name="post_id" value="{{ post.post_id }}">
+                                <div class="form-group">
+                                    <textarea class="form-control" name="comment_text" rows="2" placeholder="Add a comment..." required></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Submit</button>
+                            </form>
+                        </div>
+                        <!-- 显示评论 -->
+                        <div class="comments">
+                            {% for comment in post.comments %}
+                                <div class="comment">
+                                    <strong>{{ comment.username }}</strong> {{ comment.text }} <small class="text-muted">{{ comment.date }}</small>
+                                    {% if comment.username == username %}
+                                        <form action="{{ url_for('delete_comment') }}" method="post" style="display:inline;">
+                                            <input type="hidden" name="comment_id" value="{{ comment.id }}">
+                                            <button type="submit" class="btn btn-danger btn-sm ml-2">Delete</button>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleCommentForm(postId) {
+        var form = document.getElementById("commentForm-" + postId);
+        if (form.style.display === "none") {
+            form.style.display = "block";
+        } else {
+            form.style.display = "none";
+        }
+    }
+
+    function toggleLike(button) {
+        var postId = button.getAttribute("data-post-id");
+        var isLiked = button.classList.contains("liked");
+
+        fetch("/toggle_like", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                post_id: postId,
+                is_liked: !isLiked
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                button.classList.toggle("liked");
+                button.style.color = button.classList.contains("liked") ? "red" : "black";
+            } else {
+                alert(data.error);
+            }
+        })
+        .catch(error => console.error("Error:", error));
+    }
+
+    function toggleFollow(button) {
+        var username = button.getAttribute("data-username");
+        var isFollowing = button.classList.contains("following");
+
+        fetch("/toggle_follow", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                username: username,
+                is_following: !isFollowing
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                button.classList.toggle("following");
+                var followText = button.querySelector(".follow-text");
+                followText.textContent = button.classList.contains("following") ? "Following" : "Follow";
+            } else {
+                alert(data.error);
+            }
+        })
+        .catch(error => console.error("Error:", error));
+    }
+
+    function repostPost(button) {
+        var postId = button.getAttribute("data-post-id");
+
+        fetch("/repost_post", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                post_id: postId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert("Post reposted successfully!");
+            } else {
+                alert(data.error);
+            }
+        })
+        .catch(error => console.error("Error:", error));
+    }
+</script>
+
+<style>
+    .like-button.liked .glyphicon-heart {
+        color: red;
+    }
+    .follow-button.following .follow-text {
+        color: green;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends "layout.html" %}
+
+{% block title %}Logout - My Blog{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1 class="mt-5">Logout</h1>
+        <p class="lead">You have been successfully logged out. <a href="{{ url_for('login') }}">Login again</a> or <a href="{{ url_for('index') }}">return to homepage</a>.</p>
+    </div>
+</div>
+{% endblock %}

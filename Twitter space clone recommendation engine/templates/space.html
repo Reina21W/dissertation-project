@@ -1,0 +1,126 @@
+{% extends "layout.html" %}
+
+{% block title %}Spaces{% endblock %}
+
+{% block content %}
+<h2>Recommended Spaces</h2>
+
+<!-- Display recommended spaces -->
+<div>
+    {% for space in spaces %}
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">{{ space.name }}</h5>
+                <p class="card-text">{{ space.description }}</p>
+                <p class="card-text">Host: {{ space.host }}</p>
+                <p class="card-text">Created at: {{ space.created_at }}</p>
+
+                <!-- 如果 space 的 status 是 end，显示结束标记 -->
+                {% if space.status == 'ended' %}
+                    <p class="text-danger">Status: Ended</p>
+                {% else %}
+                    {% if space.is_host %}
+                       <form action="{{ url_for('end_space') }}" method="post" style="display:inline;">
+                            <input type="hidden" name="space_id" value="{{ space.id }}">
+                            <button type="submit" class="btn btn-danger">End Space</button>
+                       </form>
+                    {% elif space.is_member %}
+                        <form action="{{ url_for('leave_space') }}" method="post" style="display:inline;">
+                            <input type="hidden" name="space_id" value="{{ space.id }}">
+                            <button type="submit" class="btn btn-danger">Leave Space</button>
+                        </form>
+                    {% else %}
+                        <button class="btn btn-primary" data-toggle="modal" data-target="#viewSpaceModal-{{ space.id }}">View Space</button>
+                    {% endif %}
+                {% endif %}
+
+                <!-- View Space Modal -->
+                <div class="modal fade" id="viewSpaceModal-{{ space.id }}" tabindex="-1" role="dialog" aria-labelledby="viewSpaceModalLabel-{{ space.id }}" aria-hidden="true">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="viewSpaceModalLabel-{{ space.id }}">{{ space.name }}</h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <p><strong>Host:</strong> {{ space.host }}</p>
+                                <p><strong>Created at:</strong> {{ space.created_at }}</p>
+                                <p><strong>Members:</strong> {{ space.member_count }}</p>
+                                <p><strong>Description:</strong> {{ space.description }}</p>
+                                {% if not space.is_member %}
+                                    <form action="{{ url_for('join_space') }}" method="post">
+                                        <input type="hidden" name="space_id" value="{{ space.id }}">
+                                        <div class="form-group">
+                                            <label for="role">Join as:</label>
+                                            <select class="form-control" id="role" name="role" required>
+                                                <option value="moderator">Moderator</option>
+                                                <option value="speaker">Speaker</option>
+                                                <option value="listener">Listener</option>
+                                            </select>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary">Join</button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+
+<!-- Create Space Modal -->
+<button class="btn btn-primary" data-toggle="modal" data-target="#createSpaceModal">Create Space</button>
+<div class="modal fade" id="createSpaceModal" tabindex="-1" role="dialog" aria-labelledby="createSpaceModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createSpaceModalLabel">Create Your Space</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form action="{{ url_for('create_space') }}" method="post">
+                    <div class="form-group">
+                        <label for="space_name">Space Name</label>
+                        <input type="text" class="form-control" id="space_name" name="space_name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="spaceDescription">Space Description</label>
+                        <textarea class="form-control" id="spaceDescription" name="space_description" rows="3" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="topics">Select Topics (maximum 3)</label>
+                        <div id="topics">
+                            {% for topic in topics %}
+                                <div class="form-check">
+                                    <input class="form-check-input topic-checkbox" type="checkbox" value="{{ topic }}" name="topics">
+                                    <label class="form-check-label">{{ topic }}</label>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Start now</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('topics').addEventListener('change', function() {
+        var selectedOptions = this.selectedOptions;
+        if (selectedOptions.length > 3) {
+            alert('You can select up to 3 topics.');
+            for (var i = 0; i < selectedOptions.length; i++) {
+                selectedOptions[i].selected = false;
+            }
+        }
+    });
+</script>
+
+{% endblock %}
